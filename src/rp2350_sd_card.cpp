@@ -2,7 +2,7 @@
 /*
  * Card command sequencing adapted from SDIO_RP2350's MIT-licensed
  * sdfat_sdcard_rp2350.cpp at 0c757c2b3554e744b8821719607830753cfde262.
- * Modified for FatFs integration: read-only block access, no SdFat, prefetch,
+ * Modified for FatFs integration and synchronous raw block I/O: no SdFat, prefetch,
  * write checks or speed negotiation, and one completed transaction per read.
  *
  * Copyright (c) 2022-2025 Rabbit Hole Computing
@@ -196,12 +196,18 @@ bool Rp2350SdCard::finishRead(bool multiple)
     if (!multiple) return stopped;
     uint32_t response = 0;
     if (!command(12, 0, response) || (response & kCardErrors)) return false;
+    return waitReady() && stopped;
+}
+
+bool Rp2350SdCard::waitReady()
+{
+    uint32_t response = 0;
     const uint32_t start = time_us_32();
     do
     {
         if (!command(13, relative_address_, response) || (response & kCardErrors)) return false;
         // R1 must report READY_FOR_DATA and CURRENT_STATE == TRAN.
-        if ((response & (1U << 8)) && ((response >> 9) & 15U) == 4) return stopped;
+        if ((response & (1U << 8)) && ((response >> 9) & 15U) == 4) return true;
     } while (static_cast<uint32_t>(time_us_32() - start) < SDIO_TRANSFER_TIMEOUT_US);
     return false;
 }
@@ -252,6 +258,54 @@ bool Rp2350SdCard::read(uint32_t sector, uint8_t *destination, uint32_t count)
         count -= blocks;
     }
     return true;
+}
+
+bool Rp2350SdCard::writeSector(uint32_t sector, const uint8_t *source)
+{
+    uint32_t response = 0;
+    const uint32_t address = sector_addressing_ ? sector : sector * kSectorSize;
+    const bool started = command(24, address, response, SDIO_FLAG_STOP_CLK) &&
+                         !(response & kCardErrors) &&
+                         rp2350_sdio_tx_start(source, 1, kSectorSize) == SDIO_OK;
+    sdio_status_t result = SDIO_ERR_RESPONSE_TIMEOUT;
+    if (started)
+    {
+        do { result = rp2350_sdio_tx_poll(nullptr); } while (result == SDIO_BUSY);
+    }
+    const bool stopped = rp2350_sdio_stop() == SDIO_OK;
+    // Successful CMD24 ends itself. An incomplete/error transfer may leave
+    // the card waiting for data, so cancel it before checking programming state.
+    bool cancelled = true;
+    if (!started || result != SDIO_OK)
+        cancelled = command(12, 0, response) && !(response & kCardErrors);
+    const bool settled = waitReady();
+    return started && result == SDIO_OK && stopped && cancelled && settled;
+}
+
+bool Rp2350SdCard::write(uint32_t sector, const uint8_t *source, uint32_t count)
+{
+    if (!ready_ || !source || !count || sector >= sector_count_ || count > sector_count_ - sector)
+        return false;
+    // Start with individually completed CMD24 writes. Unlike multi-block
+    // streaming, this has no retained transfer state or deferred acknowledgement.
+    for (uint32_t index = 0; index < count; ++index, source += kSectorSize)
+    {
+        const uint8_t *aligned = source;
+        if ((reinterpret_cast<uintptr_t>(source) & 3U) != 0)
+        {
+            std::memcpy(sector_buffer_, source, kSectorSize);
+            aligned = sector_buffer_;
+        }
+        if (!writeSector(sector + index, aligned)) return false;
+    }
+    return true;
+}
+
+bool Rp2350SdCard::sync()
+{
+    // No MCU write-back cache exists. Verify the card has completed internal
+    // programming and is back in TRAN before a caller acknowledges host eject.
+    return ready_ && waitReady();
 }
 
 bool Rp2350SdCard::present()

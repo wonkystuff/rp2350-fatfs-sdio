@@ -10,20 +10,31 @@ claim about the licensing of that project's code or earlier firmware releases.
 
 ## Scope
 
+This branch experiments with raw `write()` and `sync()` for an exclusive block
+owner such as USB MSC. FatFs itself remains read-only. Writes use individually
+completed CMD24 sectors, with no streaming state or deferred acknowledgement.
+Failed writes may have partially changed media; there is no automatic retry or
+power-loss guarantee. Use a backed-up test card for hardware acceptance.
+This experiment is not part of the fixed read-only v0.1.0 release.
+
+Basic USB reads/writes and host eject followed by a primary-button restart
+have been confirmed in the consuming application. File-hash, power-loss and
+broader host/card compatibility testing remain separate acceptance work.
+
 - RP2350, four-bit SDIO, 25 MHz standard-speed data transfers.
 - FAT/exFAT via FatFs R0.15 patch 1; one volume and 512-byte sectors.
 - SD-v2 initialization, including sector-addressed SDHC/SDXC and byte-addressed
   SD-v2 SDSC. Geometry is checked; sector counts must fit in 32 bits.
 - Synchronous, allocation-free card protocol and disk adapter. Aligned reads
   use DMA directly; unaligned buffers use one fixed 512-byte bounce buffer.
-- No SPI, RP2040, writes, formatting, prefetch, RTOS support or speed negotiation.
+- No SPI, RP2040, FatFs file writes, formatting, prefetch, RTOS support or speed negotiation.
 - One physical card, one driver instance and one serialized caller. The exposed
   `rp2350_sd_card` is that instance; constructing more objects does not create
   independent PIO/DMA drivers.
 
-The underlying MIT driver contains transmit support, but this adapter exposes
-no write API, compiles FatFs read-only, and never runs upstream's write check.
-This is not a hardware write-protection mechanism.
+Raw-sector writes are explicit operations for an exclusive owner; FatFs stays
+read-only and initialization never runs upstream's write check. Read-only FatFs
+is not a hardware write-protection mechanism.
 
 ## Use With CMake
 
@@ -136,6 +147,16 @@ directory-listing example has compilation coverage only, not separate hardware
 acceptance. Neither report establishes compatibility with every board or card.
 
 ## Repository Boundary
+
+### Contribution Licensing
+
+Review the actual licence/provenance of every reused source file and dependency
+at its pinned revision, not just a repository's top-level licence. Preserve
+copyright notices and attribution, and record new dependencies/adaptations in
+NOTICE.md with their terms. Do not remove licence metadata to make an
+implementation appear permissive. Do not import code with unresolved or
+incompatible terms; clarify permission before incorporating it. This includes
+code proposed by AI tools: generated code is not a provenance guarantee.
 
 Everything required to build/test this library is within this directory or its
 explicitly pinned public dependencies. The application that first used it is

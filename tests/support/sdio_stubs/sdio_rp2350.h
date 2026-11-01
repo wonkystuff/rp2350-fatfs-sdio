@@ -6,7 +6,8 @@
 #include "sdio_rp2350_config.h"
 
 // Stand-in for the MIT driver's public protocol API, not for our card adapter.
-// Deliberately no transmit/write API: the playback adapter must never call one.
+// Transmit access is exercised separately; ordinary initialization/reads must
+// still never issue write or erase commands.
 enum sdio_status_t {
     SDIO_OK = 0, SDIO_BUSY = 1, SDIO_ERR_RESPONSE_TIMEOUT = 2,
     SDIO_ERR_RESPONSE_CODE = 4, SDIO_ERR_DATA_CRC = 6
@@ -24,4 +25,6 @@ sdio_status_t rp2350_sdio_command_u32(uint8_t, uint32_t, uint32_t *, uint32_t);
 sdio_status_t rp2350_sdio_command(uint8_t, uint32_t, void *, int, uint32_t);
 sdio_status_t rp2350_sdio_rx_start(uint8_t *, uint32_t, uint32_t);
 sdio_status_t rp2350_sdio_rx_poll(uint32_t *);
+sdio_status_t rp2350_sdio_tx_start(const uint8_t *, uint32_t, uint32_t);
+sdio_status_t rp2350_sdio_tx_poll(uint32_t *);
 sdio_status_t rp2350_sdio_stop();

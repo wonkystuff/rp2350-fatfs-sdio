@@ -19,12 +19,19 @@ public:
     // Detecting removal invalidates readiness; finding insertion does not mount.
     bool present();
     bool read(uint32_t sector, uint8_t *destination, uint32_t count);
+    // Raw block writes for an exclusive owner (for example USB MSC). FatFs
+    // remains read-only. Success includes card programming completion; failure
+    // may leave partially written media and must not be retried blindly.
+    bool write(uint32_t sector, const uint8_t *source, uint32_t count);
+    bool sync();
     uint32_t sectorCount() const { return sector_count_; }
     bool ready() const { return ready_; }
 
 private:
     bool command(uint8_t index, uint32_t argument, uint32_t &response, uint32_t flags = 0);
     bool finishRead(bool multiple);
+    bool waitReady();
+    bool writeSector(uint32_t sector, const uint8_t *source);
     bool readAligned(uint32_t sector, uint8_t *destination, uint32_t count);
 
     // Card-discovered geometry/addressing, valid only after a successful begin.
