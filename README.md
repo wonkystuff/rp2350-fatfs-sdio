@@ -1,12 +1,22 @@
 # RP2350 FatFs SDIO
 
 A small, read-only FatFs integration for the Raspberry Pi Pico SDK, using
-Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver.
+Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver.The code
+provides _glue_ between these two external libraries:
+
+- https://github.com/abbrev/fatfs
+- https://github.com/rabbitholecomputing/SDIO_RP2350
 
 The integration code is MIT licensed. FatFs retains its own permissive licence;
 all component notices and pinned source revisions are in [NOTICE.md](NOTICE.md).
 This is not a fork of the historical combined no-OS SD library, and makes no
 claim about the licensing of that project's code or earlier firmware releases.
+
+The repository exists because of a dissatisfaction with the (otherwise brilliant)
+[no-OS-FatFS-SD-SDIO-SPI-RPi-Pico](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico)
+which refers to the ZuluSCSI codebase, the GPL-3.0 license being incompatible with
+commercial/closed-source firmware. As such, it is likely that changes will be made here
+as and when **wonkystuff®** firmware requires it!
 
 ## Scope
 
