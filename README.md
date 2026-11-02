@@ -18,6 +18,20 @@ which refers to the ZuluSCSI codebase, the GPL-3.0 license being incompatible wi
 commercial/closed-source firmware. As such, it is likely that changes will be made here
 as and when **wonkystuff®** firmware requires it!
 
+## AI-Assisted Development
+
+OpenAI Codex/ChatGPT was used to help construct this library, including writing
+and refactoring integration code, tests and documentation. This is disclosed so
+that users can make an informed decision about using AI-assisted code.
+
+The upstream FatFs and SDIO sources are separate third-party projects; this
+disclosure concerns work in this integration repository, not their development.
+AI assistance is not a guarantee of correctness or source provenance. The
+maintainer remains responsible for changes accepted here; component attribution
+and licence information are recorded separately in [NOTICE.md](NOTICE.md).
+The tests and hardware checks described below do not establish universal card
+compatibility or protection against data loss.
+
 ## Scope
 
 The unreleased integration adds raw `write()` and `sync()` for an exclusive block
