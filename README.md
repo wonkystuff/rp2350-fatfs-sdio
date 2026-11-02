@@ -1,8 +1,8 @@
 # RP2350 FatFs SDIO
 
 A small, read-only FatFs integration for the Raspberry Pi Pico SDK, using
-Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver.The code
-provides _glue_ between these two external libraries:
+Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver. The code
+basically provides the _glue_ between these two external libraries:
 
 - https://github.com/abbrev/fatfs
 - https://github.com/rabbitholecomputing/SDIO_RP2350
@@ -18,7 +18,32 @@ which refers to the ZuluSCSI codebase, the GPL-3.0 license being incompatible wi
 commercial/closed-source firmware. As such, it is likely that changes will be made here
 as and when **wonkystuff®** firmware requires it!
 
+## AI-Assisted Development
+
+OpenAI Codex/ChatGPT was used to help construct this library, including writing
+and refactoring integration code, tests and documentation. This is disclosed so
+that users can make an informed decision about using AI-assisted code.
+
+The upstream FatFs and SDIO sources are separate third-party projects; this
+disclosure concerns work in this integration repository, not their development.
+AI assistance is not a guarantee of correctness or source provenance. The
+maintainer remains responsible for changes accepted here; component attribution
+and licence information are recorded separately in [NOTICE.md](NOTICE.md).
+The tests and hardware checks described below do not establish universal card
+compatibility or protection against data loss.
+
 ## Scope
+
+The unreleased integration adds raw `write()` and `sync()` for an exclusive block
+owner such as USB MSC. FatFs itself remains read-only. Writes use individually
+completed CMD24 sectors, with no streaming state or deferred acknowledgement.
+Failed writes may have partially changed media; there is no automatic retry or
+power-loss guarantee. Use a backed-up test card for hardware acceptance.
+These additions are not part of the fixed read-only v0.1.0 release.
+
+Basic USB reads/writes and host eject followed by a primary-button restart
+have been confirmed in the consuming application. File-hash, power-loss and
+broader host/card compatibility testing remain separate acceptance work.
 
 - RP2350, four-bit SDIO, 25 MHz standard-speed data transfers.
 - FAT/exFAT via FatFs R0.15 patch 1; one volume and 512-byte sectors.
@@ -26,14 +51,14 @@ as and when **wonkystuff®** firmware requires it!
   SD-v2 SDSC. Geometry is checked; sector counts must fit in 32 bits.
 - Synchronous, allocation-free card protocol and disk adapter. Aligned reads
   use DMA directly; unaligned buffers use one fixed 512-byte bounce buffer.
-- No SPI, RP2040, writes, formatting, prefetch, RTOS support or speed negotiation.
+- No SPI, RP2040, FatFs file writes, formatting, prefetch, RTOS support or speed negotiation.
 - One physical card, one driver instance and one serialized caller. The exposed
   `rp2350_sd_card` is that instance; constructing more objects does not create
   independent PIO/DMA drivers.
 
-The underlying MIT driver contains transmit support, but this adapter exposes
-no write API, compiles FatFs read-only, and never runs upstream's write check.
-This is not a hardware write-protection mechanism.
+Raw-sector writes are explicit operations for an exclusive owner; FatFs stays
+read-only and initialization never runs upstream's write check. Read-only FatFs
+is not a hardware write-protection mechanism.
 
 ## Use With CMake
 
@@ -107,6 +132,31 @@ Failure diagnostics print only on failed initialization/reads, not successful
 transactions; unavailable-card discovery is quiet. Schedule all blocking work
 in the storage owner's context.
 
+### Exclusive Raw Block Access
+
+An owner such as USB MSC can call `begin()`, `read()`, `write()` and `sync()`
+directly, without mounting FatFs. Do not expose raw storage to a host while a
+local filesystem is mounted; serialization of individual calls alone cannot
+make two independent filesystem owners safe.
+
+`write()` waits for each sector's transfer and programming completion before
+advancing. It stops at the first error and never automatically retries. Earlier
+sectors may already be committed and the failing sector may have changed too:
+the request is not atomic. The caller's source buffer must remain valid and
+unchanged until the call returns, including when DMA reads it directly.
+
+`sync()` checks card readiness; there is no MCU write-back cache. A later
+successful sync does not repair or retroactively validate a failed write, and
+cannot flush files cached by a USB host. `ready()` reports cached initialization
+state, not a live health check or a sticky record of I/O failures. Applications
+must handle failures explicitly. For USB MSC, revoke further host data access
+after an error and require a fresh ownership session/card initialization before
+resuming, rather than silently accepting writes to a reinserted card.
+
+Transmit polling uses the pinned low-level driver's transfer timeout. The
+adapter separately bounds its wait for READY_FOR_DATA in TRAN state. These are
+per-stage limits, not a fixed maximum latency for a multi-sector request.
+
 ## Example
 
 `examples/list-directory` mounts once, lists the root directory and unmounts.
@@ -133,6 +183,10 @@ ctest --test-dir build-tests --output-on-failure
 Tests compile the real protocol/diskio sources with fake external driver,
 GPIO, IRQ and time boundaries. They cover pin bias, geometry/addressing,
 aligned/unaligned reads, burst splitting, cleanup, timeouts and card discovery.
+Write coverage includes aligned/unaligned source data, SDSC addressing, busy
+polling, first/later-sector failures, failed stop/cancel, driver transmit timeout,
+programming timeout and card-reported completion errors. Captured transmit
+buffers represent attempted transfers, not a model of durable card contents.
 They do not simulate PIO, DMA or a filesystem, nor establish throughput, WCET
 or universal SD-card compatibility. Applications should test their additional
 filesystem/session ownership and hotplug policy separately.
@@ -146,6 +200,16 @@ directory-listing example has compilation coverage only, not separate hardware
 acceptance. Neither report establishes compatibility with every board or card.
 
 ## Repository Boundary
+
+### Contribution Licensing
+
+Review the actual licence/provenance of every reused source file and dependency
+at its pinned revision, not just a repository's top-level licence. Preserve
+copyright notices and attribution, and record new dependencies/adaptations in
+NOTICE.md with their terms. Do not remove licence metadata to make an
+implementation appear permissive. Do not import code with unresolved or
+incompatible terms; clarify permission before incorporating it. This includes
+code proposed by AI tools: generated code is not a provenance guarantee.
 
 Everything required to build/test this library is within this directory or its
 explicitly pinned public dependencies. The application that first used it is

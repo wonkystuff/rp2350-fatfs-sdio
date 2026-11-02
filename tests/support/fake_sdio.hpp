@@ -20,6 +20,16 @@ extern std::array<uint8_t, 16> csd;
 extern uint32_t clock_us, read_sector;
 extern bool card_present, high_capacity, receive_error;
 extern bool status_busy, read_active, init_busy, response_error;
+extern bool writes_allowed, transmit_error, transmit_start_error;
+extern bool transmit_timeout, stop_error, status_response_error;
+// Script transmit progress/failure at the external driver boundary. Captured
+// blocks are attempted transfers, not proof of persistent card contents.
+extern uint32_t failed_write_sector;
+extern unsigned transmit_busy_polls, transmit_polls;
+extern unsigned programming_polls;
+extern uint32_t write_sector;
+extern std::vector<uint32_t> write_starts;
+extern std::vector<std::array<uint8_t, 512>> written_blocks;
 extern int failed_command;
 extern sdio_status_t failed_command_status;
 extern unsigned stops;

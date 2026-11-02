@@ -23,3 +23,8 @@ by this repository. The USB-serial example additionally uses SDK USB support
 and TinyUSB. Preserve the applicable SDK/component notices when distributing
 example firmware or your own application. This component list is not a complete
 licence inventory for every possible application or toolchain build.
+
+The raw write/sync additions use the same pinned MIT driver's
+public transmit API and the SD command protocol. They introduce no additional
+dependency and import no code from the historical combined SD library. Existing
+card-adapter attribution and licence notices are retained.
