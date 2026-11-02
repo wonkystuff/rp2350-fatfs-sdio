@@ -20,12 +20,12 @@ as and when **wonkystuff®** firmware requires it!
 
 ## Scope
 
-This branch experiments with raw `write()` and `sync()` for an exclusive block
+The unreleased integration adds raw `write()` and `sync()` for an exclusive block
 owner such as USB MSC. FatFs itself remains read-only. Writes use individually
 completed CMD24 sectors, with no streaming state or deferred acknowledgement.
 Failed writes may have partially changed media; there is no automatic retry or
 power-loss guarantee. Use a backed-up test card for hardware acceptance.
-This experiment is not part of the fixed read-only v0.1.0 release.
+These additions are not part of the fixed read-only v0.1.0 release.
 
 Basic USB reads/writes and host eject followed by a primary-button restart
 have been confirmed in the consuming application. File-hash, power-loss and
@@ -118,6 +118,31 @@ Failure diagnostics print only on failed initialization/reads, not successful
 transactions; unavailable-card discovery is quiet. Schedule all blocking work
 in the storage owner's context.
 
+### Exclusive Raw Block Access
+
+An owner such as USB MSC can call `begin()`, `read()`, `write()` and `sync()`
+directly, without mounting FatFs. Do not expose raw storage to a host while a
+local filesystem is mounted; serialization of individual calls alone cannot
+make two independent filesystem owners safe.
+
+`write()` waits for each sector's transfer and programming completion before
+advancing. It stops at the first error and never automatically retries. Earlier
+sectors may already be committed and the failing sector may have changed too:
+the request is not atomic. The caller's source buffer must remain valid and
+unchanged until the call returns, including when DMA reads it directly.
+
+`sync()` checks card readiness; there is no MCU write-back cache. A later
+successful sync does not repair or retroactively validate a failed write, and
+cannot flush files cached by a USB host. `ready()` reports cached initialization
+state, not a live health check or a sticky record of I/O failures. Applications
+must handle failures explicitly. For USB MSC, revoke further host data access
+after an error and require a fresh ownership session/card initialization before
+resuming, rather than silently accepting writes to a reinserted card.
+
+Transmit polling uses the pinned low-level driver's transfer timeout. The
+adapter separately bounds its wait for READY_FOR_DATA in TRAN state. These are
+per-stage limits, not a fixed maximum latency for a multi-sector request.
+
 ## Example
 
 `examples/list-directory` mounts once, lists the root directory and unmounts.
@@ -144,6 +169,10 @@ ctest --test-dir build-tests --output-on-failure
 Tests compile the real protocol/diskio sources with fake external driver,
 GPIO, IRQ and time boundaries. They cover pin bias, geometry/addressing,
 aligned/unaligned reads, burst splitting, cleanup, timeouts and card discovery.
+Write coverage includes aligned/unaligned source data, SDSC addressing, busy
+polling, first/later-sector failures, failed stop/cancel, driver transmit timeout,
+programming timeout and card-reported completion errors. Captured transmit
+buffers represent attempted transfers, not a model of durable card contents.
 They do not simulate PIO, DMA or a filesystem, nor establish throughput, WCET
 or universal SD-card compatibility. Applications should test their additional
 filesystem/session ownership and hotplug policy separately.

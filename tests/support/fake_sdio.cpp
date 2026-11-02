@@ -20,6 +20,9 @@ uint32_t clock_us = 0, read_sector = 0;
 bool card_present = true, high_capacity = true, receive_error = false;
 bool status_busy = false, read_active = false, init_busy = false, response_error = false;
 bool writes_allowed = false, transmit_error = false, transmit_start_error = false;
+bool transmit_timeout = false, stop_error = false, status_response_error = false;
+uint32_t failed_write_sector = UINT32_MAX, transmit_started_us = 0;
+unsigned transmit_busy_polls = 0, transmit_polls = 0;
 unsigned programming_polls = 0;
 uint32_t write_sector = 0;
 std::vector<uint32_t> write_starts;
@@ -51,6 +54,10 @@ void fresh(bool sdhc)
     card_present = true;
     receive_error = status_busy = init_busy = response_error = read_active = false;
     writes_allowed = transmit_error = transmit_start_error = false;
+    transmit_timeout = stop_error = status_response_error = false;
+    failed_write_sector = UINT32_MAX;
+    transmit_started_us = 0;
+    transmit_busy_polls = transmit_polls = 0;
     programming_polls = 0;
     write_starts.clear(); written_blocks.clear();
     failed_command = -1;
@@ -123,6 +130,7 @@ sdio_status_t rp2350_sdio_command_u32(uint8_t index, uint32_t argument, uint32_t
         check(!read_active, "presence/status commands never interrupt an ongoing multiblock read");
         if (programming_polls) { --programming_polls; *response = 7U << 9; }
         else *response = (1U << 8) | ((status_busy ? 5U : 4U) << 9);
+        if (status_response_error) *response |= 1U << 19;
         break;
     case 24:
         check(writes_allowed && (flags & SDIO_FLAG_STOP_CLK), "only explicit writes start transmit with a stopped clock");
@@ -176,16 +184,27 @@ sdio_status_t rp2350_sdio_rx_start(uint8_t *destination, uint32_t count, uint32_
     return SDIO_OK;
 }
 sdio_status_t rp2350_sdio_rx_poll(uint32_t *) { return receive_error ? SDIO_ERR_DATA_CRC : SDIO_OK; }
-sdio_status_t rp2350_sdio_stop() { ++stops; return SDIO_OK; }
+sdio_status_t rp2350_sdio_stop() { ++stops; return stop_error ? SDIO_ERR_STOP_TIMEOUT : SDIO_OK; }
 
 sdio_status_t rp2350_sdio_tx_start(const uint8_t *source, uint32_t count, uint32_t size)
 {
     check(writes_allowed && count == 1 && size == 512 && (reinterpret_cast<uintptr_t>(source) & 3U) == 0,
           "writes use aligned single-sector DMA");
     if (transmit_start_error) return SDIO_ERR_RESPONSE_TIMEOUT;
+    transmit_started_us = clock_us;
     write_starts.push_back(write_sector);
     written_blocks.emplace_back();
     std::memcpy(written_blocks.back().data(), source, 512);
     return SDIO_OK;
 }
-sdio_status_t rp2350_sdio_tx_poll(uint32_t *) { return transmit_error ? SDIO_ERR_DATA_CRC : SDIO_OK; }
+sdio_status_t rp2350_sdio_tx_poll(uint32_t *)
+{
+    ++transmit_polls;
+    // The pinned low-level driver owns the transmit timeout. Model that
+    // contract rather than requiring a duplicate timer in the card adapter.
+    if (transmit_timeout)
+        return static_cast<uint32_t>(time_us_32() - transmit_started_us) >= SDIO_TRANSFER_TIMEOUT_US
+            ? SDIO_ERR_DATA_TIMEOUT : SDIO_BUSY;
+    if (transmit_busy_polls) { --transmit_busy_polls; return SDIO_BUSY; }
+    return transmit_error || write_sector == failed_write_sector ? SDIO_ERR_DATA_CRC : SDIO_OK;
+}

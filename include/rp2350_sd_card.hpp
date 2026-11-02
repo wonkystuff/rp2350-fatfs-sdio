@@ -23,8 +23,11 @@ public:
     // remains read-only. Success includes card programming completion; failure
     // may leave partially written media and must not be retried blindly.
     bool write(uint32_t sector, const uint8_t *source, uint32_t count);
+    // Wait for card readiness; no MCU write-back cache exists. Success does
+    // not repair an earlier failed write or flush another owner's filesystem.
     bool sync();
     uint32_t sectorCount() const { return sector_count_; }
+    // Cached initialization state, not a live health check or error latch.
     bool ready() const { return ready_; }
 
 private:
@@ -39,7 +42,7 @@ private:
     uint32_t relative_address_{0};
     bool sector_addressing_{false};
     bool ready_{false};
-    // Mechanical bounce buffer for FatFs byte-aligned destinations, not
+    // Mechanical bounce buffer for unaligned read/write buffers, not
     // prefetch or retained PCM history. Aligned bulk reads avoid this copy.
     alignas(4) uint8_t sector_buffer_[512]{};
 };

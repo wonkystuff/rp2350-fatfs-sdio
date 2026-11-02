@@ -10,7 +10,8 @@
 // still never issue write or erase commands.
 enum sdio_status_t {
     SDIO_OK = 0, SDIO_BUSY = 1, SDIO_ERR_RESPONSE_TIMEOUT = 2,
-    SDIO_ERR_RESPONSE_CODE = 4, SDIO_ERR_DATA_CRC = 6
+    SDIO_ERR_RESPONSE_CODE = 4, SDIO_ERR_DATA_TIMEOUT = 5,
+    SDIO_ERR_DATA_CRC = 6, SDIO_ERR_STOP_TIMEOUT = 9
 };
 enum rp2350_sdio_mode_t { SDIO_INITIALIZE, SDIO_MMC, SDIO_STANDARD };
 struct rp2350_sdio_timing_t { rp2350_sdio_mode_t mode; };
