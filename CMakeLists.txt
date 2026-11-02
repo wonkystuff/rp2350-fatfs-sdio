@@ -14,7 +14,8 @@ include(FetchContent)
 # SD library: removing licence metadata would not replace its implementation.
 FetchContent_Declare(rp2350_fatfs_sdio_fatfs
     GIT_REPOSITORY https://github.com/abbrev/fatfs.git
-    GIT_TAG f81eb28dec9746ba9f8623aaaa631dc96e60093a
+    # R0.16, July 2026 metadata fixes and compressed Unicode tables included.
+    GIT_TAG ab992fcf2926b8a1ee3f0a8f9cefb6584174100d
 )
 FetchContent_Declare(rp2350_fatfs_sdio_driver
     GIT_REPOSITORY https://github.com/rabbitholecomputing/SDIO_RP2350.git

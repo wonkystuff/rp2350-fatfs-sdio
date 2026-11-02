@@ -5,7 +5,7 @@
 | Integration, CMake, tests and example | This repository; Copyright (c) 2026 wonkystuff | MIT, see LICENSE |
 | Low-level SDIO driver and PIO | https://github.com/rabbitholecomputing/SDIO_RP2350 at `0c757c2b3554e744b8821719607830753cfde262` | MIT, see LICENSES/SDIO_RP2350.txt and upstream headers |
 | Adapted card command sequencing | Same revision, `src/sdfat_sdcard_rp2350.cpp` | MIT; Rabbit Hole Computing 2022-2025 and Bill Greiman 2011-2025 notices retained in `src/rp2350_sd_card.cpp` |
-| FatFs | https://github.com/abbrev/fatfs at `f81eb28dec9746ba9f8623aaaa631dc96e60093a`, R0.15 patch 1 | ChaN's permissive licence, see LICENSES/FatFs.txt and source headers |
+| FatFs | https://github.com/abbrev/fatfs at `ab992fcf2926b8a1ee3f0a8f9cefb6584174100d`, R0.16 with July 2026 metadata fixes and compressed Unicode tables | ChaN's permissive licence, see LICENSES/FatFs.txt and source headers |
 
 The build compiles upstream `src/sdio_rp2350.cpp` plus its generated PIO header,
 and FatFs `source/ff.c` and `source/ffunicode.c`, using the corresponding public

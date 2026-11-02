@@ -1,8 +1,8 @@
-/* FatFs R0.15 patch 1 configuration, derived from ChaN's configuration sample.
+/* FatFs R0.16 configuration, derived from ChaN's configuration sample.
  * See LICENSES/FatFs.txt. All storage access must have one caller/owner.
  */
 #pragma once
-#define FFCONF_DEF 80286
+#define FFCONF_DEF 80386
 
 // Read-only filesystem with directory listing, seek and f_gets support.
 #define FF_FS_READONLY 1
@@ -27,6 +27,7 @@
 #define FF_LFN_BUF 255
 #define FF_SFN_BUF 12
 #define FF_FS_RPATH 0
+#define FF_PATH_DEPTH 10 // Inactive while relative paths are disabled.
 
 // One 32-bit-addressed volume; 512-byte sectors; FAT and exFAT.
 #define FF_VOLUMES 1
@@ -41,6 +42,7 @@
 #define FF_FS_TINY 0
 #define FF_FS_EXFAT 1
 #define FF_FS_NORTC 0
+#define FF_FS_CRTIME 0
 #define FF_NORTC_MON 1
 #define FF_NORTC_MDAY 1
 #define FF_NORTC_YEAR 2022
