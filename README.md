@@ -46,7 +46,8 @@ have been confirmed in the consuming application. File-hash, power-loss and
 broader host/card compatibility testing remain separate acceptance work.
 
 - RP2350, four-bit SDIO, 25 MHz standard-speed data transfers.
-- FAT/exFAT via FatFs R0.15 patch 1; one volume and 512-byte sectors.
+- FAT/exFAT via FatFs R0.16, including July 2026 metadata fixes and compressed
+  Unicode tables; one volume and 512-byte sectors.
 - SD-v2 initialization, including sector-addressed SDHC/SDXC and byte-addressed
   SD-v2 SDSC. Geometry is checked; sector counts must fit in 32 bits.
 - Synchronous, allocation-free card protocol and disk adapter. Aligned reads
@@ -89,6 +90,12 @@ for your filenames. Read-only, single-volume, 512-byte sectors, 32-bit LBA and
 non-reentrant access are enforced at compile time. Changing these limitations
 requires implementing and testing the corresponding driver support, not just
 editing ffconf.h.
+
+Configurations supplied by applications must use `FFCONF_DEF 80386` for this
+FatFs revision. This integration keeps relative paths disabled, defines the
+inactive `FF_PATH_DEPTH` default as 10, and leaves `FF_FS_CRTIME` disabled.
+Do not substitute upstream's default configuration: it enables filesystem
+writes and differs from this library's supported contract.
 
 Only unchanged upstream sources are compiled. CMake stages their headers and
 source files in the build directory so quoted includes select the application's
@@ -190,6 +197,25 @@ buffers represent attempted transfers, not a model of durable card contents.
 They do not simulate PIO, DMA or a filesystem, nor establish throughput, WCET
 or universal SD-card compatibility. Applications should test their additional
 filesystem/session ownership and hotplug policy separately.
+
+To also test the real FatFs parser, pass an existing checkout of the exact
+FatFs revision pinned in CMakeLists.txt (no download is performed by the tests):
+
+```sh
+cmake -S tests -B build-tests -DFATFS_SOURCE_DIR=/path/to/fatfs
+cmake --build build-tests
+ctest --test-dir build-tests --output-on-failure
+```
+
+This adds synthetic FAT16, FAT32 and exFAT sector fixtures covering long names,
+directory termination, reads/seeks across boundaries, set-style text, missing
+files and sector errors, plus rejection of excessive FAT sizes and invalid
+exFAT cluster counts. It does not model an SD card's physical durability or
+replace tests with host-formatted cards. The patched dependency and optional
+filesystem tests pass normally and under AddressSanitizer/UBSan. The user also
+confirmed that the consuming player firmware works with this upgrade on
+hardware. This is functional acceptance, not a new throughput measurement,
+long-duration integrity check or USB-storage qualification.
 
 The integration before extraction was tested in a four-stream embedded audio
 application, including card reinsertion. Its reported 15-second four-stereo-
