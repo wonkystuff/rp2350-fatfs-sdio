@@ -1,8 +1,8 @@
 # RP2350 FatFs SDIO
 
 A small, read-only FatFs integration for the Raspberry Pi Pico SDK, using
-Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver.The code
-provides _glue_ between these two external libraries:
+Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver. The code
+basically provides the _glue_ between these two external libraries:
 
 - https://github.com/abbrev/fatfs
 - https://github.com/rabbitholecomputing/SDIO_RP2350
