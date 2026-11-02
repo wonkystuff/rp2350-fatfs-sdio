@@ -1,6 +1,6 @@
 # RP2350 FatFs SDIO
 
-A small, read-only FatFs integration for the Raspberry Pi Pico SDK, using
+A small FatFs/SDIO integration for the Raspberry Pi Pico SDK, using
 Rabbit Hole Computing's explicitly MIT-licensed RP2350 SDIO driver. The code
 basically provides the _glue_ between these two external libraries:
 
@@ -9,6 +9,7 @@ basically provides the _glue_ between these two external libraries:
 
 The integration code is MIT licensed. FatFs retains its own permissive licence;
 all component notices and pinned source revisions are in [NOTICE.md](NOTICE.md).
+Release history and pending changes are recorded in the [changelog](#changelog).
 This is not a fork of the historical combined no-OS SD library, and makes no
 claim about the licensing of that project's code or earlier firmware releases.
 
@@ -34,7 +35,7 @@ compatibility or protection against data loss.
 
 ## Scope
 
-The unreleased integration adds raw `write()` and `sync()` for an exclusive block
+Version 0.2.0 adds raw `write()` and `sync()` for an exclusive block
 owner such as USB MSC. FatFs itself remains read-only. Writes use individually
 completed CMD24 sectors, with no streaming state or deferred acknowledgement.
 Failed writes may have partially changed media; there is no automatic retry or
@@ -242,3 +243,44 @@ explicitly pinned public dependencies. The application that first used it is
 not part of this package and need not be open-sourced to use the library.
 Preserve the notices in LICENSE, LICENSES/ and source headers when distributing
 this code; review other application/SDK/toolchain dependencies independently.
+
+## Changelog
+
+Record changes under Unreleased. When publishing, replace that heading with
+the version and release date (YYYY-MM-DD), then start a new Unreleased section.
+Keep published tags immutable.
+
+### Unreleased
+
+No changes yet.
+
+### 0.2.0 - 2026-11-02
+
+- Added synchronous raw-sector `write()` and `sync()` for an exclusive block
+  owner such as USB MSC. Each sector completes before success is returned;
+  failed writes are reported without automatic retries.
+- Updated FatFs from R0.15 patch 1 to R0.16 at
+  `ab992fcf2926b8a1ee3f0a8f9cefb6584174100d`, including metadata-validation
+  fixes and compressed Unicode tables. Updated component notices.
+- Application-provided `ffconf.h` now requires `FFCONF_DEF 80386`; documented
+  relative-path depth and creation-time configuration defaults.
+- Added raw-write/failure-handling tests and real FatFs parser tests over
+  synthetic FAT16, FAT32 and exFAT media.
+- Added disclosure of Codex/ChatGPT assistance in this integration's development.
+
+FatFs file access remains read-only, and the upstream SDIO driver is unchanged.
+Raw-sector writes do not provide USB transport, concurrent filesystem access
+or power-loss protection.
+
+### 0.1.0 - 2026-11-01
+
+- Initial read-only RP2350 integration of FatFs R0.15 patch 1 and Rabbit Hole
+  Computing's MIT-licensed SDIO_RP2350 driver, with pinned dependencies and
+  retained component notices.
+- Four-bit, 25 MHz card initialization, sector reads, geometry/status queries
+  and FatFs disk adapter, with fixed-buffer support for unaligned reads.
+- Pico SDK/CMake integration, example configuration and host protocol tests.
+
+Extracted for wonkystuff development to clarify storage-code licensing and
+provenance; this does not settle the licensing of the historical combined
+SD library or earlier firmware releases.
