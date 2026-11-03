@@ -5,7 +5,7 @@ version = 1
 # Add metadata for files that cannot conveniently carry comment headers.
 # Aggregate preserves the source files' existing third-party attribution.
 [[annotations]]
-path = ["README.md", "NOTICE.md", "LICENSE", ".gitignore", "REUSE.toml", ".clang-tidy", ".github/**", "CMakeLists.txt", "config/**", "examples/**", "include/**", "src/**", "tests/**"]
+path = ["AGENTS.md", "README.md", "NOTICE.md", "LICENSE", ".gitignore", "REUSE.toml", ".clang-tidy", ".github/**", "CMakeLists.txt", "config/**", "examples/**", "include/**", "src/**", "tests/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 wonkystuff"
 SPDX-License-Identifier = "MIT"
