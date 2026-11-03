@@ -36,8 +36,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 .github/scripts/fetch-dependencies.py
-      # Pluggy 1.7 removes legacy hook discovery used by ScanCode plugins.
-      - run: pip install scancode-toolkit==32.4.1 pluggy==1.6.0
+      # Keep plugin discovery and CLI flag defaults compatible with this ScanCode release.
+      - run: pip install scancode-toolkit==32.4.1 pluggy==1.6.0 click==8.2.1
       - name: Scan repository and fetched sources
         run: >-
           scancode --license --copyright --package --processes 2
