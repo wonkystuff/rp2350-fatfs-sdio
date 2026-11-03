@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 wonkystuff
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  host-tests:
+    name: Host tests (sanitizers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CC: clang
+      CXX: clang++
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: python3 .github/scripts/fetch-dependencies.py
+      - name: Configure
+        run: >-
+          cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug
+          -DFATFS_SOURCE_DIR="$PWD/_deps/rp2350_fatfs_sdio_fatfs"
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - run: cmake --build build-tests --parallel 2
+      - run: ctest --test-dir build-tests --output-on-failure
+  pico-build:
+    name: Pico 2 SDK 2.3.0 build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: raspberrypi/pico-sdk
+          ref: 98a542c1a62fb549ffb5d66a3e5892b06276b670 # SDK 2.3.0
+          path: _deps/pico-sdk
+          submodules: recursive
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: Configure firmware
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/_deps/pico-sdk
+        run: cmake -S examples/list-directory -B build-example -DPICO_BOARD=pico2 -DPICO_NO_PICOTOOL=1
+      - run: cmake --build build-example --parallel 2
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y clang-tidy
+      - run: cmake -S tests -B build-tidy -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - run: clang-tidy -p build-tidy src/rp2350_sd_card.cpp src/rp2350_diskio.cpp
+  workflow-lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.24.x'
+          cache: false
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - run: '"$(go env GOPATH)/bin/actionlint"'

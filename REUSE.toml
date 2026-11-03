@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 wonkystuff
+version = 1
+
+# Add metadata for files that cannot conveniently carry comment headers.
+# Aggregate preserves the source files' existing third-party attribution.
+[[annotations]]
+path = ["README.md", "NOTICE.md", "LICENSE", ".gitignore", "REUSE.toml", ".clang-tidy", ".github/**", "CMakeLists.txt", "config/**", "examples/**", "include/**", "src/**", "tests/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 wonkystuff"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "third-party-notices/SDIO_RP2350.txt"
+SPDX-FileCopyrightText = "2022-2025 Rabbit Hole Computing"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "third-party-notices/FatFs.txt"
+SPDX-FileCopyrightText = "2025 ChaN"
+SPDX-License-Identifier = "LicenseRef-FatFs"

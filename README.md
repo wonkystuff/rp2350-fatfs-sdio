@@ -19,6 +19,35 @@ which refers to the ZuluSCSI codebase, the GPL-3.0 license being incompatible wi
 commercial/closed-source firmware. As such, it is likely that changes will be made here
 as and when **wonkystuff®** firmware requires it!
 
+## Automated Checks
+
+GitHub Actions runs the host protocol, raw-write and real FatFs tests with
+AddressSanitizer/UndefinedBehaviorSanitizer, compiles the Pico 2 example against
+SDK 2.3.0, and checks the integration with selected clang-tidy rules. CodeQL
+runs on pull requests, main-branch pushes and a weekly schedule. Workflow YAML
+is checked with actionlint; Dependabot proposes weekly GitHub Actions updates.
+The two CMake FetchContent revisions remain manually reviewed pins.
+
+The licence workflow runs `reuse lint` and produces a downloadable ScanCode
+inventory covering this repository and both exact FetchContent dependencies.
+The inventory is a review report, not an automatic licence-compatibility verdict;
+it does not cover a consuming application's SDK, runtime or other dependencies.
+Third-party notice copies live in `third-party-notices/`; REUSE licence texts
+live in `LICENSES/`. Existing third-party source attributions remain in place.
+
+For local checks:
+
+```sh
+python3 -m pip install reuse==5.1.1
+reuse lint
+cmake -S tests -B build-tidy -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+clang-tidy -p build-tidy src/rp2350_sd_card.cpp src/rp2350_diskio.cpp
+```
+
+Repository administrators should separately verify secret scanning/push
+protection in GitHub settings and select required checks in branch rules after
+the first successful CI run. Those settings are not controlled by workflow YAML.
+
 ## AI-Assisted Development
 
 OpenAI Codex/ChatGPT was used to help construct this library, including writing
