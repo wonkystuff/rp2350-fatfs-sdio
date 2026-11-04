@@ -275,11 +275,12 @@ bool Rp2350SdCard::writeSector(uint32_t sector, const uint8_t *source)
     const bool stopped = rp2350_sdio_stop() == SDIO_OK;
     // Successful CMD24 ends itself. An incomplete/error transfer may leave
     // the card waiting for data, so cancel it before checking programming state.
-    bool cancelled = true;
+    // Cancellation only runs after a failed transfer, which already rules out
+    // success below. Attempt cleanup, but its result cannot rescue that write.
     if (!started || result != SDIO_OK)
-        cancelled = command(12, 0, response) && !(response & kCardErrors);
+        command(12, 0, response);
     const bool settled = waitReady();
-    return started && result == SDIO_OK && stopped && cancelled && settled;
+    return started && result == SDIO_OK && stopped && settled;
 }
 
 bool Rp2350SdCard::write(uint32_t sector, const uint8_t *source, uint32_t count)
