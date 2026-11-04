@@ -21,6 +21,17 @@ as and when **wonkystuff®** firmware requires it!
 
 ## Automated Checks
 
+The CI run summary includes line, function and branch coverage for `src/` and
+`include/`, measured by a separate gcovr build of the native protocol and raw-write
+tests. Test doubles, tests themselves and upstream dependencies are excluded from
+the percentages. This measures host execution, not PIO/DMA or hardware coverage;
+the real FatFs parser tests run separately in the sanitizer job.
+
+On GitHub, open **Actions → CI → a run** to see the summary. Download the
+`coverage-report` artifact, unzip it and open `index.html` for annotated source
+showing uncovered lines and branches. Reports are retained for 14 days. Coverage
+is informational initially, with no minimum percentage enforced.
+
 GitHub Actions runs the host protocol, raw-write and real FatFs tests with
 AddressSanitizer/UndefinedBehaviorSanitizer, compiles the Pico 2 example against
 SDK 2.3.0, and checks the integration with selected clang-tidy rules. CodeQL
