@@ -239,6 +239,11 @@ They do not simulate PIO, DMA or a filesystem, nor establish throughput, WCET
 or universal SD-card compatibility. Applications should test their additional
 filesystem/session ownership and hotplug policy separately.
 
+Additional failure scenarios cover initialization command/response rejection,
+invalid geometry, direct-read and diskio argument validation, receive polling
+and setup failures, multiblock cleanup errors, unaligned-read copy suppression,
+presence-status invalidation and card-reported write cancellation errors.
+
 To also test the real FatFs parser, pass an existing checkout of the exact
 FatFs revision pinned in CMakeLists.txt (no download is performed by the tests):
 

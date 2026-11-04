@@ -28,6 +28,11 @@ uint32_t write_sector = 0;
 std::vector<uint32_t> write_starts;
 std::vector<std::array<uint8_t, 512>> written_blocks;
 int failed_command = -1;
+uint32_t failed_command_argument = UINT32_MAX;
+int response_command = -1;
+uint32_t response_argument = UINT32_MAX, response_value = 0;
+bool receive_start_error = false;
+unsigned receive_busy_polls = 0;
 sdio_status_t failed_command_status = SDIO_ERR_RESPONSE_TIMEOUT;
 unsigned stops = 0;
 bool irq_enabled = true;
@@ -61,6 +66,12 @@ void fresh(bool sdhc)
     programming_polls = 0;
     write_starts.clear(); written_blocks.clear();
     failed_command = -1;
+    failed_command_argument = UINT32_MAX;
+    response_command = -1;
+    response_argument = UINT32_MAX;
+    response_value = 0;
+    receive_start_error = false;
+    receive_busy_polls = 0;
     failed_command_status = SDIO_ERR_RESPONSE_TIMEOUT;
     stops = 0;
     clock_us = 0;
@@ -118,7 +129,9 @@ sdio_status_t rp2350_sdio_command_u32(uint8_t index, uint32_t argument, uint32_t
     requests.push_back({index, argument});
     *response = 0;
     if (!card_present) return SDIO_ERR_RESPONSE_TIMEOUT;
-    if (index == failed_command) return failed_command_status;
+    if (index == failed_command &&
+        (failed_command_argument == UINT32_MAX || argument == failed_command_argument))
+        return failed_command_status;
     switch (index)
     {
     case 8: *response = 0x1aa; break;
@@ -146,6 +159,9 @@ sdio_status_t rp2350_sdio_command_u32(uint8_t index, uint32_t argument, uint32_t
         break;
     case 12: read_active = false; break;
     }
+    if (index == response_command &&
+        (response_argument == UINT32_MAX || argument == response_argument))
+        *response = response_value;
     check((writes_allowed || (index != 24 && index != 25)) && index != 32 && index != 33 && index != 38,
           "playback emits no write or erase commands");
     return SDIO_OK;
@@ -176,6 +192,7 @@ sdio_status_t rp2350_sdio_rx_start(uint8_t *destination, uint32_t count, uint32_
 {
     check((reinterpret_cast<uintptr_t>(destination) & 3U) == 0 && count <= SDIO_MAX_BLOCKS_PER_REQ &&
           block_size == 512, "DMA receives aligned, bounded 512-byte blocks");
+    if (receive_start_error) return SDIO_ERR_RESPONSE_TIMEOUT;
     read_starts.push_back(read_sector);
     read_counts.push_back(count);
     for (uint32_t block = 0; block < count; ++block)
@@ -183,7 +200,11 @@ sdio_status_t rp2350_sdio_rx_start(uint8_t *destination, uint32_t count, uint32_
             destination[block * 512 + byte] = static_cast<uint8_t>((read_sector + block) * 17 + byte);
     return SDIO_OK;
 }
-sdio_status_t rp2350_sdio_rx_poll(uint32_t *) { return receive_error ? SDIO_ERR_DATA_CRC : SDIO_OK; }
+sdio_status_t rp2350_sdio_rx_poll(uint32_t *)
+{
+    if (receive_busy_polls) { --receive_busy_polls; return SDIO_BUSY; }
+    return receive_error ? SDIO_ERR_DATA_CRC : SDIO_OK;
+}
 sdio_status_t rp2350_sdio_stop() { ++stops; return stop_error ? SDIO_ERR_STOP_TIMEOUT : SDIO_OK; }
 
 sdio_status_t rp2350_sdio_tx_start(const uint8_t *source, uint32_t count, uint32_t size)

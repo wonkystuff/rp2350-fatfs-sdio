@@ -31,6 +31,13 @@ extern uint32_t write_sector;
 extern std::vector<uint32_t> write_starts;
 extern std::vector<std::array<uint8_t, 512>> written_blocks;
 extern int failed_command;
+// UINT32_MAX matches any argument; otherwise target one protocol stage (e.g.
+// CMD55 before ACMD41 versus CMD55 after the card receives its address).
+extern uint32_t failed_command_argument;
+extern int response_command;
+extern uint32_t response_argument, response_value;
+extern bool receive_start_error;
+extern unsigned receive_busy_polls;
 extern sdio_status_t failed_command_status;
 extern unsigned stops;
 extern bool irq_enabled;

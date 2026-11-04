@@ -22,6 +22,10 @@ add_executable(sd_card_write_tests write_tests.cpp)
 target_link_libraries(sd_card_write_tests PRIVATE rp2350_sdio_test_card)
 add_test(NAME sd_card_write_tests COMMAND sd_card_write_tests)
 set_tests_properties(sd_card_write_tests PROPERTIES TIMEOUT 10)
+add_executable(sd_card_failure_tests failure_tests.cpp)
+target_link_libraries(sd_card_failure_tests PRIVATE rp2350_sdio_test_card)
+add_test(NAME sd_card_failure_tests COMMAND sd_card_failure_tests)
+set_tests_properties(sd_card_failure_tests PROPERTIES TIMEOUT 10)
 
 # Optional real-filesystem coverage using an already downloaded dependency.
 # Keep the default protocol tests independent of network access and the SDK.
