@@ -149,6 +149,12 @@ The ScanCode inventory is evidence for review, not a licence-compatibility verdi
 
 ## Code style
 
+- For C and C++, follow the repository's `.clang-format`: four spaces and
+  K&R-style opening braces on the same line. Always brace control-flow
+  bodies, including single statements, and keep an `else if` chain at the
+  same indentation level.
+- Use clang-format 21 on new or edited C/C++ code when available. Keep
+  unrelated formatting changes out of functional commits.
 - Use C++ features when they improve clarity, not just for their own sake.
 - Make code readable as a first priority: prefer names that describe a value's
   role and lifetime over names that reflect a past implementation detail.

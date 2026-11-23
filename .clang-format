@@ -1,0 +1,25 @@
+BasedOnStyle: GNU
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: Always
+  AfterFunction: true
+  AfterNamespace: true
+  BeforeElse: true
+  IndentBraces: false
+InsertBraces: true
+IndentWidth: 4
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+ColumnLimit: 100
+BinPackParameters: OnePerLine
+AllowAllParametersOfDeclarationOnNextLine: false
+UseTab: Never
+SpaceBeforeParens: ControlStatements
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Empty
+SortIncludes: Never
+ReflowComments: false
+BreakStringLiterals: false
