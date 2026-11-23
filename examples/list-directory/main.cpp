@@ -5,7 +5,8 @@
 #include "pico/stdlib.h"
 #include <cstdio>
 
-int main()
+int
+main()
 {
     stdio_init_all();
     sleep_ms(1500);
@@ -24,7 +25,10 @@ int main()
             for (unsigned i = 0; i < 16; ++i)
             {
                 const auto read_result = f_readdir(&directory, &entry);
-                if (read_result != FR_OK || entry.fname[0] == '\0') break;
+                if (read_result != FR_OK || entry.fname[0] == '\0')
+                {
+                    break;
+                }
                 std::printf("%s\n", entry.fname);
             }
             f_closedir(&directory);
@@ -33,5 +37,8 @@ int main()
     f_mount(nullptr, "0:", 0);
     rp2350_sd_card.end();
     std::puts("Done (read-only). Reset to run again.");
-    while (true) tight_loop_contents();
+    while (true)
+    {
+        tight_loop_contents();
+    }
 }

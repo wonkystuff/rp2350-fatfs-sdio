@@ -12,7 +12,10 @@
 // Application adapter tests can reuse it without importing private state.
 namespace sdio_test
 {
-struct Request { uint8_t command; uint32_t argument; };
+struct Request {
+    uint8_t command;
+    uint32_t argument;
+};
 extern std::vector<Request> requests;
 extern std::vector<uint32_t> read_starts, read_counts;
 extern std::vector<rp2350_sdio_mode_t> modes;
