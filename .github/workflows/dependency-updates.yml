@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 wonkystuff
+name: Upstream dependency updates
+on:
+  schedule:
+    - cron: '43 8 * * 1'
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: Report updates without creating branches or pull requests
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: upstream-dependency-updates
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_BASE_BRANCH: ${{ github.event.repository.default_branch }}
+      CHECK_ONLY: ${{ inputs.check_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check upstream pins and propose updates
+        shell: bash
+        run: |
+          args=()
+          if [[ "$CHECK_ONLY" == 'true' ]]; then
+            args+=(--check-only)
+          fi
+          python3 .github/scripts/check-dependency-updates.py "${args[@]}"

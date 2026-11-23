@@ -117,5 +117,7 @@ jobs:
         with:
           go-version: '1.25.x'
           cache: false
+      - name: Test dependency update automation
+        run: python3 -m unittest discover -s tests -p 'test_dependency_updates.py'
       - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
       - run: '"$(go env GOPATH)/bin/actionlint"'

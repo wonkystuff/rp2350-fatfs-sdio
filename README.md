@@ -21,6 +21,33 @@ as and when **wonkystuff®** firmware requires it!
 
 ## Automated Checks
 
+The **Upstream dependency updates** workflow checks FatFs `master` and
+SDIO_RP2350 `main` weekly on Mondays at 08:43 UTC, or on demand through
+**Actions → Upstream dependency updates → Run workflow**. Select `check_only`
+for a report without branch or PR creation. It keeps exact commit pins and opens
+one draft PR per new dependency revision on an `updates/<dependency>-<sha>` branch,
+including the upstream comparison and an acceptance checklist. No PR is created
+when the pins are current; existing proposals (including closed PRs) are preserved.
+Only one update PR per dependency stays open at a time, so newer upstream commits
+wait for that review to finish.
+Diverged upstream history and orphaned candidate branches require manual review.
+
+Enable **Settings → Actions → General → Workflow permissions → Allow GitHub
+Actions to create and approve pull requests** for automated draft creation.
+The workflow uses the built-in repository token; GitHub may require you to click
+**Approve workflows to run** on the resulting PR before CI, CodeQL and licence
+checks start. It does not need a personal token or automatically merge, tag or
+publish a release. Review source/licence changes and hardware acceptance before
+merging. The candidate build revision is updated in NOTICE.md; the historical
+revision credited for adapted source remains unchanged. Retained notice texts
+and version descriptions still need review when upstream changes them.
+
+To test the updater logic locally without network access:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_dependency_updates.py'
+```
+
 The CI run summary includes line, function and branch coverage for `src/` and
 `include/`, measured by a separate gcovr build of the native protocol and raw-write
 tests. Test doubles, tests themselves and upstream dependencies are excluded from
